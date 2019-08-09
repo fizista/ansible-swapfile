@@ -11,7 +11,7 @@
 - name: Disable swap file
   shell: test -f {{ swapfile_path }} && swapoff {{ swapfile_path }} || true
   changed_when: False
-  when: swapfile_delete
+  when: swapfile_delete|bool
 
 - name: Create swap file
   command: |
@@ -23,7 +23,7 @@
   args:
     creates: "{{ swapfile_path }}"
   register: swapfile_register_create
-  when: not swapfile_delete
+  when: not swapfile_delete|bool
 
 - name: Set swap file permissions
   file:
@@ -32,15 +32,15 @@
     owner: "root"
     group: "root"
     mode: "0600"
-  when: (not swapfile_delete and not ansible_check_mode)
+  when: (not swapfile_delete|bool and not ansible_check_mode)
 
 - name: Initialize swap file
   command: mkswap {{ swapfile_path }}
-  when: (swapfile_register_create is changed and not swapfile_delete)
+  when: (swapfile_register_create is changed and not swapfile_delete|bool)
 
 - name: Enable swap file
   command: swapon {{ swapfile_path }}
-  when: (swapfile_register_create is changed and not swapfile_delete)
+  when: (swapfile_register_create is changed and not swapfile_delete|bool)
 
 - name: Manage swap file in /etc/fstab
   mount:
@@ -50,10 +50,10 @@
     opts: "sw,nofail"
     dump: "0"
     passno: "0"
-    state: "{{ 'absent' if swapfile_delete else 'present' }}"
+    state: "{{ 'absent' if swapfile_delete|bool else 'present' }}"
 
 - name: Remove swap file
   file:
     path: "{{ swapfile_path }}"
     state: "absent"
-  when: swapfile_delete
+  when: swapfile_delete|bool
